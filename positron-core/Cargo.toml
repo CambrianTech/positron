@@ -12,3 +12,4 @@ rust-version.workspace = true
 serde = { workspace = true }
 ts-rs = { workspace = true }
 uuid = { workspace = true }
+serde_json = { workspace = true }

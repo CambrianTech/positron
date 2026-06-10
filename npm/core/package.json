@@ -1,0 +1,23 @@
+{
+  "name": "@positron/core",
+  "version": "0.0.1",
+  "description": "Positron wire contract — TypeScript types generated from positron-core's Rust structs (single source of truth).",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/CambrianTech/positron.git",
+    "directory": "npm/core"
+  },
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "files": [
+    "src"
+  ],
+  "keywords": [
+    "positron",
+    "widgets",
+    "viewstate",
+    "continuum"
+  ]
+}

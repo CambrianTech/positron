@@ -1,0 +1,31 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  rust:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - name: fmt
+        run: cargo fmt --check
+      - name: clippy (deny warnings)
+        run: cargo clippy --workspace --tests -- -D warnings
+      - name: test
+        run: cargo test --workspace
+      # The single-source-of-truth gate: cargo test regenerates the
+      # TypeScript in npm/*/src/generated/ from the Rust structs. If
+      # the committed types drifted from the Rust source, the tree is
+      # dirty here and the build fails — generated TS can never lag
+      # the structs it mirrors.
+      - name: generated TypeScript matches Rust source
+        # --porcelain catches UNTRACKED generated files too — a new
+        # #[ts(export)] type whose .ts was never committed must fail
+        # here, not slip through as untracked.
+        run: test -z "$(git status --porcelain)" || { git status --porcelain; exit 1; }

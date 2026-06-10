@@ -1,0 +1,4 @@
+[env]
+# ts-rs writes generated TypeScript here (single-source-of-truth flow:
+# Rust structs -> @positron/core types). Relative to the workspace root.
+TS_RS_EXPORT_DIR = { value = "npm/core/src/generated", relative = true }
