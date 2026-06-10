@@ -15,3 +15,6 @@ export type { StateEnvelope } from "./generated/StateEnvelope";
 export type { CommandSource } from "./generated/CommandSource";
 export type { CommandEnvelope } from "./generated/CommandEnvelope";
 export type { ObserverSpec } from "./generated/ObserverSpec";
+export type { KindRevision } from "./generated/KindRevision";
+export type { ClientMessage } from "./generated/ClientMessage";
+export type { ServerMessage } from "./generated/ServerMessage";
