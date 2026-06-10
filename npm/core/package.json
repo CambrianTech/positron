@@ -1,6 +1,6 @@
 {
   "name": "@positron/core",
-  "version": "0.0.1",
+  "version": "0.1.1",
   "description": "Positron wire contract — TypeScript types generated from positron-core's Rust structs (single source of truth).",
   "license": "MIT",
   "repository": {

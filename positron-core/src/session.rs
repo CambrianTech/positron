@@ -74,8 +74,13 @@
 //! with no reporting channel is a silent failure, so
 //! [`ServerMessage::CommandFailed`] exists (v0.1.1). A full
 //! `Result` frame for request-shaped success feedback remains a
-//! v0.x candidate; adding `ServerMessage` variants is additive and
-//! non-breaking for tagged unions.
+//! v0.x candidate. **Forward compatibility rule:** consumers MUST
+//! treat a `ServerMessage` whose `type` they do not recognize as
+//! skip-and-log, never connection-fatal — that is what makes variant
+//! additions non-breaking for deployed clients, not the union shape
+//! alone. (Rust consumers of the typed enum surface unknown variants
+//! as a deserialize error on that frame; apply the same rule — log,
+//! skip the frame, keep the connection.)
 //!
 //! The exact-equality skip has one residual ABA case: a client whose
 //! `last_seen` revision N came from a pre-restart substrate may meet
@@ -163,6 +168,11 @@ pub enum ServerMessage {
     /// acknowledgement IS the state change it causes, streaming down
     /// as `State` (the unidirectional model). Consumers correlate via
     /// the `correlation_id` they sent.
+    ///
+    /// **Delivery scope:** the substrate MUST send this frame ONLY to
+    /// the connection that sent the failing command — never broadcast.
+    /// Other clients neither need another client's failures nor should
+    /// see their details.
     CommandFailed {
         /// Echo of [`CommandEnvelope::correlation_id`].
         #[ts(type = "string")]
