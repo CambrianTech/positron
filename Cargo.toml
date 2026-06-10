@@ -1,0 +1,20 @@
+[workspace]
+resolver = "2"
+members = [
+    "positron-core",
+]
+
+[workspace.package]
+version = "0.0.1"
+edition = "2021"
+license = "MIT"
+authors = ["CambrianTech <joel@cambriantech.com>"]
+repository = "https://github.com/CambrianTech/positron"
+rust-version = "1.75"
+
+[workspace.dependencies]
+# Held at minimum versions matching airc / continuum so consumers
+# don't get dragged into incompatible upgrades.
+serde = { version = "1", features = ["derive"] }
+ts-rs = "10"
+uuid = { version = "1", features = ["v4", "serde"] }
