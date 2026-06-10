@@ -25,4 +25,7 @@ jobs:
       # dirty here and the build fails — generated TS can never lag
       # the structs it mirrors.
       - name: generated TypeScript matches Rust source
-        run: git diff --exit-code
+        # --porcelain catches UNTRACKED generated files too — a new
+        # #[ts(export)] type whose .ts was never committed must fail
+        # here, not slip through as untracked.
+        run: test -z "$(git status --porcelain)" || { git status --porcelain; exit 1; }
