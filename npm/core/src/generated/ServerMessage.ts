@@ -4,4 +4,12 @@ import type { StateEnvelope } from "./StateEnvelope";
 /**
  * Substrate → client frames.
  */
-export type ServerMessage = { "type": "state" } & StateEnvelope;
+export type ServerMessage = { "type": "state" } & StateEnvelope | { "type": "command_failed", 
+/**
+ * Echo of [`CommandEnvelope::correlation_id`].
+ */
+correlation_id: string, 
+/**
+ * Human-readable failure reason (consumer-displayable).
+ */
+error: string, };

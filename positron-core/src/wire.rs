@@ -26,7 +26,9 @@ use uuid::Uuid;
 /// Update-cadence classification for a state change (see `DESIGN.md`
 /// § "The 4 state layers"). Renderers and observers subscribe at the
 /// layer their target can sustain; the substrate enforces.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize, TS)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Default, Serialize, Deserialize, TS,
+)]
 #[serde(rename_all = "snake_case")]
 #[ts(export)]
 pub enum StateLayer {
