@@ -52,6 +52,14 @@
 //! Consumers MUST drop an envelope whose revision is lower than one
 //! already rendered for that kind (when both carry revisions) — this
 //! makes accidental reordering harmless rather than corrupting.
+//! **The drop watermark is scoped to the current subscription**: it
+//! RESETS on every `Subscribe`/`Observe` the consumer sends, and
+//! knowledge from before a reconnect travels ONLY in `last_seen`.
+//! Without this scoping, a client that rendered revision 500, then
+//! reconnected to a counter-reset substrate, would drop the
+//! snapshot@3 it just asked for (3 < 500) and every frame after it —
+//! the stale-forever gap reappearing one layer up. Watermark resets;
+//! `last_seen` remembers; the two never share a counter.
 //!
 //! This contract is what makes reconnect tolerance *structural* for
 //! consumers: a widget with no local source-of-truth cache cannot be
@@ -68,6 +76,16 @@
 //! expected v0.x addition once a consumer actually needs
 //! request-shaped feedback; adding a `ServerMessage` variant is
 //! additive and non-breaking for tagged unions.
+//!
+//! The exact-equality skip has one residual ABA case: a client whose
+//! `last_seen` revision N came from a pre-restart substrate may meet
+//! a restarted substrate whose counter has independently reached the
+//! same N with different content — the skip then wrongly omits one
+//! snapshot. The staleness is transient (any next mutation of that
+//! kind bumps the revision and streams down), and closing it fully
+//! requires an epoch/generation id on revisions — a v0.x candidate
+//! if real substrates restart often enough to care. Substrates that
+//! persist their revision counters never enter this case.
 
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
