@@ -26,7 +26,14 @@ use uuid::Uuid;
 /// Update-cadence classification for a state change (see `DESIGN.md`
 /// § "The 4 state layers"). Renderers and observers subscribe at the
 /// layer their target can sustain; the substrate enforces.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize, TS)]
+///
+/// `Ord` exists so layer sets can live in `BTreeSet`/sorted
+/// collections; the ordering is declaration order and carries NO
+/// semantic meaning (Semantic is not "more than" Persistent). Do not
+/// write cadence logic against `<`/`>`.
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Default, Serialize, Deserialize, TS,
+)]
 #[serde(rename_all = "snake_case")]
 #[ts(export)]
 pub enum StateLayer {

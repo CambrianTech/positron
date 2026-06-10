@@ -68,14 +68,19 @@
 //!
 //! ## Deliberate v0 omissions
 //!
-//! There is no ack/error frame in [`ServerMessage`], so
-//! `CommandEnvelope::correlation_id` has nothing protocol-level to
-//! correlate with yet — command *results* currently surface as new
-//! state (the substrate acts, state changes, the change streams
-//! down). A `Result`/`Error` frame keyed by `correlation_id` is the
-//! expected v0.x addition once a consumer actually needs
-//! request-shaped feedback; adding a `ServerMessage` variant is
-//! additive and non-breaking for tagged unions.
+//! There is no success-ack frame in [`ServerMessage`]: a successful
+//! command's acknowledgement IS the state change it causes (the
+//! unidirectional model). Failures are different — a failed command
+//! with no reporting channel is a silent failure, so
+//! [`ServerMessage::CommandFailed`] exists (v0.1.1). A full
+//! `Result` frame for request-shaped success feedback remains a
+//! v0.x candidate. **Forward compatibility rule:** consumers MUST
+//! treat a `ServerMessage` whose `type` they do not recognize as
+//! skip-and-log, never connection-fatal — that is what makes variant
+//! additions non-breaking for deployed clients, not the union shape
+//! alone. (Rust consumers of the typed enum surface unknown variants
+//! as a deserialize error on that frame; apply the same rule — log,
+//! skip the frame, keep the connection.)
 //!
 //! The exact-equality skip has one residual ABA case: a client whose
 //! `last_seen` revision N came from a pre-restart substrate may meet
@@ -157,6 +162,24 @@ pub enum ServerMessage {
     /// "which phase am I in" bookkeeping. If a client must
     /// distinguish, the revision diff already tells it.
     State(StateEnvelope),
+    /// A command could not be executed. Failures are LOUD — a
+    /// rejected [`CommandEnvelope`] must never vanish silently.
+    /// Success deliberately has no ack frame: a successful command's
+    /// acknowledgement IS the state change it causes, streaming down
+    /// as `State` (the unidirectional model). Consumers correlate via
+    /// the `correlation_id` they sent.
+    ///
+    /// **Delivery scope:** the substrate MUST send this frame ONLY to
+    /// the connection that sent the failing command — never broadcast.
+    /// Other clients neither need another client's failures nor should
+    /// see their details.
+    CommandFailed {
+        /// Echo of [`CommandEnvelope::correlation_id`].
+        #[ts(type = "string")]
+        correlation_id: uuid::Uuid,
+        /// Human-readable failure reason (consumer-displayable).
+        error: String,
+    },
 }
 
 #[cfg(test)]
@@ -192,6 +215,19 @@ mod tests {
         let json = serde_json::to_string(&cmd).unwrap();
         assert!(json.starts_with(r#"{"type":"command""#), "{json}");
         assert_eq!(serde_json::from_str::<ClientMessage>(&json).unwrap(), cmd);
+    }
+
+    /// Failures are loud and the tag is pinned; success has no ack
+    /// frame by design (the state change is the ack).
+    #[test]
+    fn command_failed_round_trips_with_pinned_tag() {
+        let fail = ServerMessage::CommandFailed {
+            correlation_id: Uuid::from_u128(7),
+            error: "chat/send: room not found".into(),
+        };
+        let json = serde_json::to_string(&fail).unwrap();
+        assert!(json.starts_with(r#"{"type":"command_failed""#), "{json}");
+        assert_eq!(serde_json::from_str::<ServerMessage>(&json).unwrap(), fail);
     }
 
     #[test]

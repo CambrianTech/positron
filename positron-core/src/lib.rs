@@ -34,9 +34,10 @@
 //!
 //! ## Versioning
 //!
-//! v0.0.x — contract design + reference renderers. Breaking changes
-//! allowed. v1.0 is the first stable contract; consumers should pin
-//! to a major-version range from there.
+//! v0.x — contract design + reference renderers; wire-shape changes
+//! allowed pre-1.0 but must regenerate the npm types in-commit (CI
+//! enforces). v1.0 is the first stable contract; consumers should
+//! pin to a major-version range from there.
 
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
