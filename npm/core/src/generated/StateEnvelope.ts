@@ -18,8 +18,15 @@ kind: string,
 /**
  * Revision marker for cheap change detection. `None` = treat
  * every update as new (mirrors `ViewState::revision`).
+ *
+ * TS type is `number`, not ts-rs's default `bigint` for `u64`:
+ * the JSON wire carries a number, and `bigint` breaks both
+ * directions (`JSON.parse` yields `number`; `JSON.stringify`
+ * throws on `bigint`). Revisions are monotonic counters —
+ * `Number.MAX_SAFE_INTEGER` (2^53−1) of them is not a real
+ * constraint; substrates that somehow exceed it must reset.
  */
-revision?: bigint, 
+revision?: number, 
 /**
  * Cadence layer of this update. Hosts/observers may be
  * subscribed to a subset of layers.

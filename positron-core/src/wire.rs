@@ -58,8 +58,15 @@ pub struct StateEnvelope {
     pub kind: String,
     /// Revision marker for cheap change detection. `None` = treat
     /// every update as new (mirrors `ViewState::revision`).
+    ///
+    /// TS type is `number`, not ts-rs's default `bigint` for `u64`:
+    /// the JSON wire carries a number, and `bigint` breaks both
+    /// directions (`JSON.parse` yields `number`; `JSON.stringify`
+    /// throws on `bigint`). Revisions are monotonic counters —
+    /// `Number.MAX_SAFE_INTEGER` (2^53−1) of them is not a real
+    /// constraint; substrates that somehow exceed it must reset.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[ts(optional)]
+    #[ts(optional, type = "number")]
     pub revision: Option<u64>,
     /// Cadence layer of this update. Hosts/observers may be
     /// subscribed to a subset of layers.
@@ -131,6 +138,11 @@ pub struct ObserverSpec {
     /// Widget kinds to perceive. Empty = none (explicit opt-in per
     /// kind; perception is budgeted, not ambient).
     pub kinds: Vec<String>,
+    /// Cadence layers to perceive — same explicit-opt-in semantics as
+    /// `kinds` (empty = none). A typical AI observer subscribes to
+    /// `[Session, Semantic]`; `Ephemeral` is for renderers, and an
+    /// observer asking for it should expect aggressive quantization.
+    pub layers: Vec<StateLayer>,
 }
 
 #[cfg(test)]
