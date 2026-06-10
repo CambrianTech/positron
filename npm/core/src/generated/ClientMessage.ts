@@ -22,4 +22,13 @@ layers: Array<StateLayer>,
  * Revisions already held; substrate MAY skip matching
  * snapshots. Empty = client holds nothing, send everything.
  */
-last_seen: Array<KindRevision>, } | { "type": "command" } & CommandEnvelope | { "type": "observe" } & ObserverSpec;
+last_seen: Array<KindRevision>, } | { "type": "command" } & CommandEnvelope | { "type": "observe", 
+/**
+ * The observer's identity, budget, and perception scope.
+ */
+spec: ObserverSpec, 
+/**
+ * Revisions this observer already perceived; same skip rule
+ * as `Subscribe::last_seen`.
+ */
+last_seen: Array<KindRevision>, };

@@ -15,17 +15,59 @@
 //!    for each subscribed kind (revision-tagged), and
 //! 2. then stream live updates from that moment forward.
 //!
-//! The client passes `last_seen` revisions; the substrate MAY skip a
-//! snapshot whose revision the client already holds. The substrate
-//! never replays history: a reconnect can therefore never flood
-//! (no transcript replay) and never gap (the snapshot covers the
-//! outage; live covers the rest). Renderers reconcile by revision
-//! diff and re-render purely from the newest state.
+//! The substrate never replays history: a reconnect can therefore
+//! never flood (no transcript replay) and never gap (the snapshot
+//! covers the outage; live covers the rest). Renderers reconcile by
+//! revision diff and re-render purely from the newest state.
+//!
+//! **Skip rule (exact equality).** The substrate MAY skip a kind's
+//! snapshot **only when the client's `last_seen` revision EXACTLY
+//! equals the substrate's current revision** for that kind. Never a
+//! `>=` comparison: a substrate restart may reset its revision
+//! counter, and under `>=` a client holding `last_seen: 500` against
+//! a freshly-restarted substrate at revision 3 would keep stale state
+//! forever. Exact equality makes counter resets safe by construction
+//! — any mismatch, in either direction, sends the snapshot. (The skip
+//! is purely an optimization; when in doubt, send.)
+//!
+//! **Subscribe is declarative (replace, not merge).** A `Subscribe`
+//! frame declares the connection's complete interest set; it REPLACES
+//! any previous subscription on the connection. Clients always send
+//! their whole world — no incremental add/remove bookkeeping exists
+//! to drift. Snapshot-then-live applies to every kind in the new set
+//! (subject to the skip rule); kinds absent from the new set stop
+//! flowing. Identical re-subscribes are therefore idempotent as a
+//! special case of replacement.
+//!
+//! **Observers resync identically.** [`ClientMessage::Observe`] is
+//! declarative per `observer_id` (re-observe REPLACES that observer's
+//! registration) and triggers the same snapshot-then-live with the
+//! same exact-equality skip on its `last_seen`. A reconnecting AI
+//! observer rebuilds its perceived world exactly like a renderer
+//! does — there is one resync contract, not a human one and an AI
+//! one.
+//!
+//! **Ordering.** Within one kind, the substrate MUST emit `State`
+//! frames in non-decreasing revision order over an ordered transport.
+//! Consumers MUST drop an envelope whose revision is lower than one
+//! already rendered for that kind (when both carry revisions) — this
+//! makes accidental reordering harmless rather than corrupting.
 //!
 //! This contract is what makes reconnect tolerance *structural* for
 //! consumers: a widget with no local source-of-truth cache cannot be
 //! corrupted by a dropped transport, because the next subscribe
 //! rebuilds its entire world from one snapshot.
+//!
+//! ## Deliberate v0 omissions
+//!
+//! There is no ack/error frame in [`ServerMessage`], so
+//! `CommandEnvelope::correlation_id` has nothing protocol-level to
+//! correlate with yet — command *results* currently surface as new
+//! state (the substrate acts, state changes, the change streams
+//! down). A `Result`/`Error` frame keyed by `correlation_id` is the
+//! expected v0.x addition once a consumer actually needs
+//! request-shaped feedback; adding a `ServerMessage` variant is
+//! additive and non-breaking for tagged unions.
 
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
@@ -70,9 +112,20 @@ pub enum ClientMessage {
     /// A user (or observer) action — see [`CommandEnvelope`] for the
     /// provenance contract.
     Command(CommandEnvelope),
-    /// Register an AI observer subscription (perception budget
-    /// enforced substrate-side).
-    Observe(ObserverSpec),
+    /// Register (or re-register, after a reconnect) an AI observer.
+    /// Declarative per `spec.observer_id` — replaces that observer's
+    /// previous registration — and triggers snapshot-then-live with
+    /// the exact-equality skip, identically to `Subscribe`. One
+    /// resync contract for humans and AIs. Perception budget enforced
+    /// substrate-side.
+    Observe {
+        /// The observer's identity, budget, and perception scope.
+        spec: ObserverSpec,
+        /// Revisions this observer already perceived; same skip rule
+        /// as `Subscribe::last_seen`.
+        #[serde(default)]
+        last_seen: Vec<KindRevision>,
+    },
 }
 
 /// Substrate → client frames.
@@ -146,6 +199,35 @@ mod tests {
         match msg {
             ClientMessage::Subscribe { last_seen, .. } => assert!(last_seen.is_empty()),
             other => panic!("expected Subscribe, got {other:?}"),
+        }
+    }
+
+    /// The `observe` frame's tag layout is pinned (it was the one
+    /// variant without committed-test coverage), and a bare observe
+    /// without `last_seen` decodes as perceive-from-scratch — the
+    /// observer resync contract mirrors the subscriber one exactly.
+    #[test]
+    fn observe_round_trips_with_pinned_tag_and_default_last_seen() {
+        let obs = ClientMessage::Observe {
+            spec: ObserverSpec {
+                observer_id: "maya".into(),
+                budget_hz: 4,
+                kinds: vec!["chat".into()],
+                layers: vec![StateLayer::Session, StateLayer::Semantic],
+            },
+            last_seen: vec![KindRevision {
+                kind: "chat".into(),
+                revision: 12,
+            }],
+        };
+        let json = serde_json::to_string(&obs).unwrap();
+        assert!(json.starts_with(r#"{"type":"observe""#), "{json}");
+        assert_eq!(serde_json::from_str::<ClientMessage>(&json).unwrap(), obs);
+
+        let bare = r#"{"type":"observe","spec":{"observer_id":"maya","budget_hz":4,"kinds":["chat"],"layers":["session"]}}"#;
+        match serde_json::from_str::<ClientMessage>(bare).unwrap() {
+            ClientMessage::Observe { last_seen, .. } => assert!(last_seen.is_empty()),
+            other => panic!("expected Observe, got {other:?}"),
         }
     }
 }
