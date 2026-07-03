@@ -1,0 +1,13 @@
+[package]
+name = "positron-ratatui"
+description = "Terminal (ratatui) reference Renderer + Host event loop for positron — the outlier-A surface: real cells, real state, headless-testable via TestBackend."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+positron-core = { path = "../positron-core" }
+ratatui = { workspace = true }
