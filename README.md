@@ -73,12 +73,21 @@ Positron passes all four. That's why it's a separate repo.
 
 ## Status
 
-**v0.0.0 — contract design.** The first commit defines the `ViewState` trait + `Renderer` trait + host bridge primitives in `positron-core`. No reference renderer yet — the contract gets its own moment.
+**v0.1.x — contract design + first proof.** `positron-core` defines the four
+primitives (`ViewState` / `Renderer` / `Host` / `Observer`) plus the wire and
+session protocols; `examples/counter-cli` proves the "define once, project many"
+thesis end-to-end in one process (one `Counter` `ViewState`, two
+different-`Output` renderers, one `Observer` that perceives the same state and
+acts through a `CommandEnvelope`). No transport, no substrate — the contract
+standing on its own.
 
-Next:
-- `positron-ratatui` — terminal renderer reference impl
-- `positron-ts` — TypeScript bindings + Lit DOM reference renderer
-- `examples/counter-cli` — trivial demo proving the contract is renderer-agnostic
+Run the proof: `cargo run -p counter-cli`.
+
+Next (see `docs/ARCHITECTURE.md` § roadmap O3–O6):
+- `positron-ratatui` — terminal renderer reference impl (O3)
+- `positron-lit` — Lit DOM reference renderer + regenerate `@positron/core` (O4)
+- `ContinuumHost` (in continuum) — session ↔ Commands/Events, first real `ViewState` (O5)
+- persona `Observer` → RAG/tool bridge (O6)
 - Theme pack (Loki / Matrix / Fallout / Tron) ported from the cyberpunk-cli experiment
 
 See `DESIGN.md` for the contract design and the rationale behind each trait, and

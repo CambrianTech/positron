@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
     "positron-core",
+    "examples/counter-cli",
 ]
 
 [workspace.package]
