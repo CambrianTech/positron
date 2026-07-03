@@ -27,11 +27,17 @@ not rewriting the widget.
                                                               acts via CommandEnvelope
 ```
 
+> The boxes illustrate the **role** — every surface is a `Renderer<S>` projection
+> of the same `ViewState`. They are *not* the primary-renderer choice: as
+> § *Renderer paradigms are GPU-first* (below) makes precise, one Rust wgpu
+> renderer covers web + native + AR/VR, so "DOM" and "native" are not separate
+> surfaces but two of that one renderer's targets.
+
 The four "environments" collapse to **two roles**:
 
 | Role | Consumes | Produces | Surfaces |
 |---|---|---|---|
-| `Renderer<S>` | the `ViewState` | a surface (GPU frame / cells / DOM) | **wgpu GPU frame** — one Rust renderer running native (Metal / Vulkan / DX12), web (WebGPU/WebGL via WASM), and AR/VR (Bevy is wgpu underneath); terminal (ratatui); optional DOM (Lit, a11y/text-reflow) |
+| `Renderer<S>` | the `ViewState` | a surface (GPU frame / cells / DOM) | **wgpu GPU frame** — one Rust renderer running native (Metal / Vulkan / DX12), web (WebGPU, WebGL fallback, via WASM), and AR/VR (Bevy is wgpu underneath); terminal (ratatui); optional DOM (Lit, a11y/text-reflow) |
 | `Observer<S>` | the **same** `ViewState` | perception → RAG, then `CommandEnvelope`s | AI persona |
 
 The AI persona is **not a special case**. It is the fourth projection of the
@@ -162,9 +168,10 @@ the view from `ViewState` alone, the state type is incomplete — not the render
   is the recommended default rather than a primitive-enforced necessity; DESIGN.md
   leans the same way.
 - **`@positron/core` (npm) + `positron-lit` vs continuum `sdk/typescript`: decided
-  at O4, not before.** Both generate types from Rust via ts-rs; whether the positron
-  web stack *subsumes* or *complements* the continuum SDK is resolved when the web
-  renderer actually lands.
+  at O4b, not before.** Both generate types from Rust via ts-rs; whether the positron
+  DOM stack *subsumes* or *complements* the continuum SDK is resolved when the Lit
+  renderer actually lands. (O4 is `positron-wgpu`, the GPU surface — it has no bearing
+  on the npm/SDK reconcile, which is the DOM stack's concern.)
 
 ## Organizational task roadmap (one PR per unit)
 
