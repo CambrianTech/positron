@@ -213,7 +213,10 @@ mod tests {
         let gauge_out: Vec<String> = gauge.render(&state);
 
         assert_eq!(line_out, "counter = 4 (rev 2)");
-        assert_eq!(gauge_out, vec!["[████░░░░░░]".to_string(), "4/10".to_string()]);
+        assert_eq!(
+            gauge_out,
+            vec!["[████░░░░░░]".to_string(), "4/10".to_string()]
+        );
 
         // Rendering again yields byte-identical output — no hidden state drift.
         assert_eq!(line.render(&state), line_out);
