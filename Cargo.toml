@@ -3,6 +3,7 @@ resolver = "2"
 members = [
     "positron-core",
     "positron-ratatui",
+    "positron-wgpu",
     "examples/counter-cli",
 ]
 
@@ -25,3 +26,10 @@ serde_json = "1"
 # its matching crossterm, so consumers use `ratatui::crossterm` and never
 # risk a version skew against a separately-pinned crossterm.
 ratatui = "0.29"
+# GPU renderer surface (positron-wgpu, outlier B). wgpu is the run-everywhere
+# GPU abstraction (Metal/Vulkan/DX12 native + WebGPU under WASM); pollster
+# blocks on its async device bring-up off any runtime; bytemuck casts vertex
+# structs to bytes for upload.
+wgpu = "22"
+pollster = "0.4"
+bytemuck = { version = "1", features = ["derive"] }
