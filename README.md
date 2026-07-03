@@ -83,8 +83,12 @@ standing on its own.
 
 Run the proof: `cargo run -p counter-cli`.
 
-Next (see `docs/ARCHITECTURE.md` § roadmap O3–O6):
-- `positron-ratatui` — terminal renderer + `Host` event loop (O3, outlier A)
+Landed since: `positron-ratatui` — terminal renderer + `Host` event loop (O3,
+outlier A: a genuinely different `type Output` — terminal cells, not a `String`;
+headless-testable `drive` loop + live-TTY `run_crossterm`). Run it:
+`cargo run -p positron-ratatui --example counter_tui`.
+
+Next (see `docs/ARCHITECTURE.md` § roadmap O4–O6):
 - `positron-wgpu` — one Rust GPU renderer for native (Metal/Vulkan/DX12) + web (WebGPU/WASM) + AR/VR (O4, outlier B — "web ≠ DOM")
 - `positron-lit` *(optional)* — Lit DOM renderer for a11y / text-reflow (O4b)
 - `ContinuumHost` (in continuum) — session ↔ Commands/Events, first real `ViewState` (O5)

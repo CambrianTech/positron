@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
     "positron-core",
+    "positron-ratatui",
     "examples/counter-cli",
 ]
 
@@ -20,3 +21,7 @@ serde = { version = "1", features = ["derive"] }
 ts-rs = { version = "10", features = ["uuid-impl", "serde-json-impl"] }
 uuid = { version = "1", features = ["v4", "serde"] }
 serde_json = "1"
+# Terminal renderer surface (positron-ratatui, outlier A). ratatui re-exports
+# its matching crossterm, so consumers use `ratatui::crossterm` and never
+# risk a version skew against a separately-pinned crossterm.
+ratatui = "0.29"

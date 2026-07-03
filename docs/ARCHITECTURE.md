@@ -185,9 +185,11 @@ the view from `ViewState` alone, the state type is incomplete — not the render
 | **O5** | `ContinuumHost` (in continuum) | positron session ↔ Commands/Events; first real `ViewState` (`ChatViewState`) flows to a positron renderer; reconciles positron's frame output with continuum's existing `RenderBackend`/`RgbaFrame` GPU seam; resolves the two-wire merge question | O3 or O4 |
 | **O6** | persona `Observer` → RAG/tool bridge (in continuum) | perception into cognition + action as `CommandEnvelope` — closes "AI persona rag/tool integration" | O5 |
 
-O1 and O2 have landed: the boundary is pinned, and `examples/counter-cli` proves
-"one `ViewState`, many renderers, plus an observer perceiving the same state" in
-a single process, before any transport or substrate. **O3 is the next unit** —
-`positron-ratatui`, the first real stateful `Renderer` + `Host` event loop
-(outlier A), ahead of the GPU renderer (O4, outlier B) that makes the "web ≠ DOM"
-claim real.
+O1–O3 have landed: the boundary is pinned; `examples/counter-cli` proves "one
+`ViewState`, many renderers, plus an observer perceiving the same state" in a
+single process; and `positron-ratatui` proves the first real stateful
+`Renderer` + `Host` event loop against a genuinely different `type Output`
+(terminal cells, not a `String`) — outlier A. The render/event loop is
+headless-testable (`drive` over a `TestBackend`) with a thin live-TTY wrapper
+(`run_crossterm`). **O4 is the next unit** — `positron-wgpu`, the run-everywhere
+GPU renderer (outlier B) that makes the "web ≠ DOM" claim real.
