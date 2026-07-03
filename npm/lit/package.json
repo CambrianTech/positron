@@ -1,0 +1,33 @@
+{
+  "name": "@positron/lit",
+  "version": "0.1.1",
+  "description": "Positron Lit DOM renderer — LitRenderer<S> (Renderer<S, TemplateResult>) + LitHost over @positron/core. The web/DOM outlier of the same contract the wgpu backend implements for the GPU.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/CambrianTech/positron.git",
+    "directory": "npm/lit"
+  },
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test \"src/**/*.test.ts\""
+  },
+  "files": [
+    "src"
+  ],
+  "dependencies": {
+    "@positron/core": "^0.1.1",
+    "lit": "^3.2.0"
+  },
+  "keywords": [
+    "positron",
+    "lit",
+    "dom",
+    "renderer",
+    "widgets",
+    "continuum"
+  ]
+}

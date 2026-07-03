@@ -167,11 +167,20 @@ the view from `ViewState` alone, the state type is incomplete — not the render
   geometry, a theme *token* is arguably semantic and could ride in state, so this
   is the recommended default rather than a primitive-enforced necessity; DESIGN.md
   leans the same way.
-- **`@positron/core` (npm) + `positron-lit` vs continuum `sdk/typescript`: decided
-  at O4b, not before.** Both generate types from Rust via ts-rs; whether the positron
-  DOM stack *subsumes* or *complements* the continuum SDK is resolved when the Lit
-  renderer actually lands. (O4 is `positron-wgpu`, the GPU surface — it has no bearing
-  on the npm/SDK reconcile, which is the DOM stack's concern.)
+- **`@positron/core` + `@positron/lit` vs continuum `sdk/typescript`: they
+  COMPLEMENT — decided at O4b when the Lit renderer landed.** positron owns the
+  *portable* half: the widget contract (`ViewState`/`Renderer`/`Host`/`Observer`)
+  and the transport-neutral session frames (`ClientMessage`/`ServerMessage`),
+  generated/hand-authored once and reusable by any substrate. continuum's SDK owns
+  the *continuum-specific* half: its `Commands`/`Events`, connection/session
+  machinery, and domain payload types. A continuum web client composes both — it
+  renders `ViewState`s through `@positron/lit` and carries actions through the
+  continuum SDK. The two meet at `ContinuumHost` (O5), which lowers positron
+  session frames onto continuum `Commands`/`Events`; neither subsumes the other,
+  so there is no merge and no duplicated source of truth. (O4 `positron-wgpu`, the
+  GPU surface, had no bearing on this — the reconcile was always the DOM stack's
+  concern, and the answer is "different layers, composed," not "one replaces the
+  other.")
 
 ## Organizational task roadmap (one PR per unit)
 
@@ -181,11 +190,11 @@ the view from `ViewState` alone, the state type is incomplete — not the render
 | **O2** | `examples/counter-cli` | renderer-agnostic **and** AI-perceives-same-state, in-process, zero transport (one `Counter` `ViewState`, ≥2 `Renderer`s, 1 `Observer`) | O1 |
 | **O3** | `positron-ratatui` | terminal `Renderer` reference + `Host` event loop (**outlier A**: CPU cells, real stateful surface) | O2 |
 | **O4** | `positron-wgpu` | the run-everywhere GPU `Renderer` (**outlier B**: native Metal/Vulkan/DX12 + web WebGPU/WASM from one codebase) — proves `Renderer<S>` carries no CPU-tree assumption; the load-bearing web+native surface | O2 |
-| **O4b** | `positron-lit` *(optional)* | Lit DOM `Renderer` + regenerate `@positron/core`; a11y / text-reflow surface where the GPU path isn't ideal; reconcile with continuum `sdk/typescript` (subsume vs complement) | O4 |
+| **O4b** | `@positron/lit` | Lit DOM `Renderer` (`Output = TemplateResult`) + `LitHost`, the TS/DOM outlier of the same contract wgpu implements for the GPU; the language-boundary proof (Rust traits → hand-authored TS interfaces in `@positron/core`) and the "web ≠ DOM as a peer paradigm" surface; reconcile with continuum `sdk/typescript` → **complement** | O4 |
 | **O5** | `ContinuumHost` (in continuum) | positron session ↔ Commands/Events; first real `ViewState` (`ChatViewState`) flows to a positron renderer; reconciles positron's frame output with continuum's existing `RenderBackend`/`RgbaFrame` GPU seam; resolves the two-wire merge question | O3 or O4 |
 | **O6** | persona `Observer` → RAG/tool bridge (in continuum) | perception into cognition + action as `CommandEnvelope` — closes "AI persona rag/tool integration" | O5 |
 
-O1–O4 have landed: the boundary is pinned; `examples/counter-cli` proves "one
+O1–O4b have landed: the boundary is pinned; `examples/counter-cli` proves "one
 `ViewState`, many renderers, plus an observer perceiving the same state" in a
 single process; `positron-ratatui` proves the first real stateful `Renderer` +
 `Host` event loop against a genuinely different `type Output` (terminal cells,
@@ -200,7 +209,23 @@ while the hardware path (`Gpu::rasterize`) is proven by the `counter_gpu`
 example (any real machine) and kept off the CI test surface (runners have no
 adapter; a missing GPU is a loud `GpuError::NoAdapter`, never a software
 fallback). `RgbaFrame` is deliberately continuum's avatar-frame shape.
+
+O4b then crosses the contract into TypeScript. It is a **guaranteed-middle**
+surface (the outlier pair already closed at O4), chosen deliberately for two
+things a Rust renderer can't prove: the **language boundary** — the four Rust
+traits re-expressed as hand-authored TS interfaces in `@positron/core` (a trait
+has no wire form for ts-rs to project, so the contract lives twice, in sync by
+hand), typechecked and CI-gated by a `web` job — and **"web ≠ DOM as a peer
+paradigm"**: `@positron/lit` is a `Renderer<S, TemplateResult>` (`LitRenderer`) +
+`LitHost`, the DOM sibling of the wgpu backend. It splits along the *same*
+pure/impure seam as the two Rust outliers — the `render(state) -> TemplateResult`
+projection is asserted headlessly on the template's `strings`/`values` (the DOM
+analogue of wgpu's quad assertions), while the one DOM-touching call (`domCommit`,
+Lit's `render` into a container) is quarantined in `dom.ts` and kept off the
+headless test path.
+
 **O5 is the next unit** — `ContinuumHost`: the first real `ViewState`
 (`ChatViewState`) flowing to a positron renderer, the session↔Commands/Events
-lowering, and the reconcile of positron's `RgbaFrame` with continuum's existing
-`RenderBackend`/`RgbaFrame` GPU seam.
+lowering (where positron's portable contract and continuum's SDK *complement*,
+per the decision above), and the reconcile of positron's `RgbaFrame` with
+continuum's existing `RenderBackend`/`RgbaFrame` GPU seam.

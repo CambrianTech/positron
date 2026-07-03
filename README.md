@@ -96,10 +96,18 @@ Landed since:
   DOM"). The pure `render(state) -> Frame` projection is unit-tested headlessly;
   the hardware path is proven by `cargo run -p positron-wgpu --example counter_gpu`
   (missing GPU is a loud `GpuError::NoAdapter`, never a software fallback).
+- `@positron/lit` — the Lit DOM renderer (O4b): `LitRenderer<S>`
+  (`Renderer<S, TemplateResult>`) + `LitHost`, the TS/DOM sibling of the wgpu
+  backend. This is also where the contract first **crosses the language boundary**
+  — the four Rust traits re-expressed as hand-authored TS interfaces in
+  `@positron/core` (typechecked and CI-gated by a `web` job), the same contract in
+  two languages beside the ts-rs-generated wire *data*. Same pure/impure seam as
+  the Rust outliers: `render(state) -> TemplateResult` is asserted headlessly on
+  the template's `strings`/`values`; the one DOM-touching call (`domCommit`) is
+  quarantined in `dom.ts`. Run it: `npm test` (workspace root).
 
-Next (see `docs/ARCHITECTURE.md` § roadmap O4b–O6):
-- `positron-lit` *(optional)* — Lit DOM renderer for a11y / text-reflow (O4b)
-- `ContinuumHost` (in continuum) — session ↔ Commands/Events, first real `ViewState` (O5)
+Next (see `docs/ARCHITECTURE.md` § roadmap O5–O6):
+- `ContinuumHost` (in continuum) — session ↔ Commands/Events, first real `ViewState` (O5). positron's portable contract and continuum's `sdk/typescript` **complement** (decided at O4b); they meet here, neither subsumes the other.
 - persona `Observer` → RAG/tool bridge (O6)
 - Theme pack (Loki / Matrix / Fallout / Tron) ported from the cyberpunk-cli experiment
 
