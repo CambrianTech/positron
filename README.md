@@ -84,8 +84,9 @@ standing on its own.
 Run the proof: `cargo run -p counter-cli`.
 
 Next (see `docs/ARCHITECTURE.md` § roadmap O3–O6):
-- `positron-ratatui` — terminal renderer reference impl (O3)
-- `positron-lit` — Lit DOM reference renderer + regenerate `@positron/core` (O4)
+- `positron-ratatui` — terminal renderer + `Host` event loop (O3, outlier A)
+- `positron-wgpu` — one Rust GPU renderer for native (Metal/Vulkan/DX12) + web (WebGPU/WASM) + AR/VR (O4, outlier B — "web ≠ DOM")
+- `positron-lit` *(optional)* — Lit DOM renderer for a11y / text-reflow (O4b)
 - `ContinuumHost` (in continuum) — session ↔ Commands/Events, first real `ViewState` (O5)
 - persona `Observer` → RAG/tool bridge (O6)
 - Theme pack (Loki / Matrix / Fallout / Tron) ported from the cyberpunk-cli experiment
