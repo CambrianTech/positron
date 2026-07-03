@@ -70,10 +70,10 @@ The one rule that keeps this from becoming two parallel systems:
 | `ServerMessage::State(StateEnvelope)` | emitted by a **projector**: a substrate-side task that subscribes to `Events` and builds the `ViewState` |
 | `ServerMessage::CommandFailed` | the loud failure path of `Commands.execute` (success needs no ack — the state change *is* the ack) |
 
-The seam that performs this lowering is the **`ContinuumHost`** (already named in
-`session.rs` tests). It is the single adapter where positron frames meet
-`Commands`/`Events`. Positron contributes the frame; the substrate contributes
-the dispatch and the bus.
+The seam that performs this lowering is the **`ContinuumHost`** (referenced by
+name in a `session.rs` test comment — not yet a wired symbol). It is the single
+adapter where positron frames meet `Commands`/`Events`. Positron contributes the
+frame; the substrate contributes the dispatch and the bus.
 
 ### Why "two wire protocols" is not a duplication
 
@@ -99,7 +99,7 @@ does not carry.
 | Concern | Home | Why |
 |---|---|---|
 | The four traits + wire + session | **positron** (`positron-core`) | consumer-agnostic contract; independently versioned (the "airc test") |
-| Reference renderer crates (`positron-ratatui`, `positron-ts`/lit) | **positron** | surface projections anyone in the problem domain reuses |
+| Reference renderer crates (`positron-ratatui`, `positron-lit`) | **positron** | surface projections anyone in the problem domain reuses |
 | Concrete `ViewState` types (`ChatViewState`, …) | **continuum** | domain vocabulary — positron never knows what a "chat message" is |
 | Command vocabulary (360+ commands) | **continuum** | already the single source of truth; positron frames, does not define |
 | `ContinuumHost` adapter (session ↔ Commands/Events) | **continuum** | binds the contract to *this* substrate's primitives |
@@ -127,11 +127,16 @@ the view from `ViewState` alone, the state type is incomplete — not the render
   *requires* it — a terminal cannot consume DOM pixel coordinates, and a persona
   perceives meaning, not geometry. `ViewState` carries semantics; each `Renderer`
   owns its own layout. This is now a contract constraint, not a lean.
-- **Theming (open Q #3): renderer concern.** Same reasoning — state stays
-  presentation-free; a theme is a property of a surface, not of the app definition.
-- **`positron-ts` vs continuum `sdk/typescript`: decided at O4, not before.** Both
-  generate types from Rust via ts-rs; whether positron-ts *subsumes* or
-  *complements* the continuum SDK is resolved when the web renderer actually lands.
+- **Theming (open Q #3): renderer concern (strong default, not a hard structural
+  constraint).** Same *direction* as layout — presentation belongs to the surface,
+  so `ViewState` stays theme-free and each `Renderer` knows themes. Unlike layout
+  geometry, a theme *token* is arguably semantic and could ride in state, so this
+  is the recommended default rather than a primitive-enforced necessity; DESIGN.md
+  leans the same way.
+- **`@positron/core` (npm) + `positron-lit` vs continuum `sdk/typescript`: decided
+  at O4, not before.** Both generate types from Rust via ts-rs; whether the positron
+  web stack *subsumes* or *complements* the continuum SDK is resolved when the web
+  renderer actually lands.
 
 ## Organizational task roadmap (one PR per unit)
 
@@ -140,7 +145,7 @@ the view from `ViewState` alone, the state type is incomplete — not the render
 | **O1** | This separation contract | the boundary is pinned before any renderer is written | — |
 | **O2** | `examples/counter-cli` | renderer-agnostic **and** AI-perceives-same-state, in-process, zero transport (one `Counter` `ViewState`, ≥2 `Renderer`s, 1 `Observer`) | O1 |
 | **O3** | `positron-ratatui` | terminal `Renderer` reference (outlier A surface) | O2 |
-| **O4** | `positron-ts` / lit | web DOM `Renderer` + regenerate `@positron/core`; reconcile with continuum `sdk/typescript` (subsume vs complement) | O2 |
+| **O4** | `positron-lit` | web DOM `Renderer` + regenerate `@positron/core`; reconcile with continuum `sdk/typescript` (subsume vs complement) | O2 |
 | **O5** | `ContinuumHost` (in continuum) | positron session ↔ Commands/Events; first real `ViewState` (`ChatViewState`) flows to a positron renderer; resolves the two-wire merge question | O3 or O4 |
 | **O6** | persona `Observer` → RAG/tool bridge (in continuum) | perception into cognition + action as `CommandEnvelope` — closes "AI persona rag/tool integration" | O5 |
 
