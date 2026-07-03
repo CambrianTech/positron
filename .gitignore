@@ -4,3 +4,7 @@ Cargo.lock
 .DS_Store
 # GPU example output (positron-wgpu counter_gpu)
 positron-wgpu-frames/
+# TypeScript packages (npm/*) — lockfile ignored to match Cargo.lock
+node_modules/
+package-lock.json
+*.tsbuildinfo

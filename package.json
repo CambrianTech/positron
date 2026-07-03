@@ -1,0 +1,20 @@
+{
+  "name": "positron-workspaces",
+  "private": true,
+  "version": "0.0.0",
+  "description": "npm workspaces root for positron's TypeScript packages (@positron/core, @positron/lit). The Rust crates are the source of truth; these packages project the contract to TS consumers.",
+  "license": "MIT",
+  "type": "module",
+  "workspaces": [
+    "npm/*"
+  ],
+  "scripts": {
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
