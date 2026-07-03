@@ -70,6 +70,10 @@ test("renderer projects state into template values", () => {
   assert.equal((result.values[2] as readonly unknown[]).length, 3);
 
   // Static structure is stable and carries no state.
+  // Lit 3: `TemplateResult` is the uncompiled form, so `.strings` is
+  // public. If we ever bump to Lit 4 (`TemplateResult` becomes possibly-
+  // compiled, which drops `.strings`), narrow to `UncompiledTemplateResult`
+  // here — this line is the one that breaks.
   const markup = result.strings.join("");
   assert.match(markup, /class="counter /);
   assert.match(markup, /data-value=/);
