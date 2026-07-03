@@ -82,7 +82,7 @@ impl Renderer<Counter> for GaugeRenderer {
             "█".repeat(filled as usize),
             "░".repeat(empty.max(0) as usize),
         );
-        let caption = format!("{}/{}", state.value.max(0).min(self.width), self.width);
+        let caption = format!("{}/{}", state.value.clamp(0, self.width), self.width);
         vec![bar, caption]
     }
 }
@@ -93,10 +93,11 @@ impl Renderer<Counter> for GaugeRenderer {
 const RESET_COMMAND: &str = "counter/reset";
 
 /// An AI persona projecting the *same* `Counter`. It does not render — it
-/// perceives, at a Session-tier cognition budget — and when the value crosses
-/// its threshold it acts through the identical command vocabulary a human's
-/// host would use, tagging provenance as `Observer` so perception and action
-/// share one identity.
+/// perceives, at a Session-tier cognition budget — and while the value sits
+/// at/over its threshold it acts through the identical command vocabulary a
+/// human's host would use, tagging provenance as `Observer` so perception and
+/// action share one identity. (Level-triggered, not edge-triggered: it emits on
+/// every perceived state that is at/over threshold, not only on the crossing.)
 struct ThresholdObserver {
     id: String,
     threshold: i64,
@@ -163,7 +164,7 @@ fn main() {
             revision: step + 1,
         };
 
-        println!("── rev {} ──────────────", state.revision().unwrap());
+        println!("── rev {} ──────────────", state.revision);
         // Human surfaces — same state, different projections, neither mutates it.
         println!("  line : {}", line.render(&state));
         for row in gauge.render(&state) {
