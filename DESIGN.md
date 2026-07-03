@@ -137,6 +137,13 @@ This is the throttling primitive that lets one `ViewState` source serve a 60fps 
 
 These are TBD before v1.0; the v0 contract above is the foundation regardless of which way they resolve.
 
+> **Note:** `docs/ARCHITECTURE.md` (the "define once, project many" separation
+> contract) now *constrains* two of these: #3 (theming) and #4 (layout) resolve to
+> **renderer concern / semantic-content-only `ViewState`** — not a lean but a
+> requirement, because one `ViewState` serving a terminal, a DOM, and an AI
+> observer cannot carry surface geometry or theme. Diffing (#1) and async arrival
+> (#2) remain open.
+
 ---
 
 ## Versioning
