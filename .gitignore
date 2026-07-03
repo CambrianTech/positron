@@ -2,3 +2,5 @@ target/
 Cargo.lock
 *.bak
 .DS_Store
+# GPU example output (positron-wgpu counter_gpu)
+positron-wgpu-frames/

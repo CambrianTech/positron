@@ -185,11 +185,22 @@ the view from `ViewState` alone, the state type is incomplete — not the render
 | **O5** | `ContinuumHost` (in continuum) | positron session ↔ Commands/Events; first real `ViewState` (`ChatViewState`) flows to a positron renderer; reconciles positron's frame output with continuum's existing `RenderBackend`/`RgbaFrame` GPU seam; resolves the two-wire merge question | O3 or O4 |
 | **O6** | persona `Observer` → RAG/tool bridge (in continuum) | perception into cognition + action as `CommandEnvelope` — closes "AI persona rag/tool integration" | O5 |
 
-O1–O3 have landed: the boundary is pinned; `examples/counter-cli` proves "one
+O1–O4 have landed: the boundary is pinned; `examples/counter-cli` proves "one
 `ViewState`, many renderers, plus an observer perceiving the same state" in a
-single process; and `positron-ratatui` proves the first real stateful
-`Renderer` + `Host` event loop against a genuinely different `type Output`
-(terminal cells, not a `String`) — outlier A. The render/event loop is
-headless-testable (`drive` over a `TestBackend`) with a thin live-TTY wrapper
-(`run_crossterm`). **O4 is the next unit** — `positron-wgpu`, the run-everywhere
-GPU renderer (outlier B) that makes the "web ≠ DOM" claim real.
+single process; `positron-ratatui` proves the first real stateful `Renderer` +
+`Host` event loop against a genuinely different `type Output` (terminal cells,
+not a `String`) — outlier A; and `positron-wgpu` closes the outlier pair — a
+`Renderer` whose `type Output` is a GPU `Frame` (colored quads for a vertex
+buffer, not any CPU text tree), rasterized offscreen through wgpu to an
+`RgbaFrame`. That proves `Renderer<S>` carries **no** CPU-tree assumption: the
+same trait spans a `String`, terminal cells, and GPU geometry without forcing —
+so the middle (mobile, DOM) is guaranteed. It splits along the same seam as
+outlier A: the pure `render(state) -> Frame` projection is unit-tested headlessly,
+while the hardware path (`Gpu::rasterize`) is proven by the `counter_gpu`
+example (any real machine) and kept off the CI test surface (runners have no
+adapter; a missing GPU is a loud `GpuError::NoAdapter`, never a software
+fallback). `RgbaFrame` is deliberately continuum's avatar-frame shape.
+**O5 is the next unit** — `ContinuumHost`: the first real `ViewState`
+(`ChatViewState`) flowing to a positron renderer, the session↔Commands/Events
+lowering, and the reconcile of positron's `RgbaFrame` with continuum's existing
+`RenderBackend`/`RgbaFrame` GPU seam.

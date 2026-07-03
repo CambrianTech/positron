@@ -83,13 +83,21 @@ standing on its own.
 
 Run the proof: `cargo run -p counter-cli`.
 
-Landed since: `positron-ratatui` — terminal renderer + `Host` event loop (O3,
-outlier A: a genuinely different `type Output` — terminal cells, not a `String`;
-headless-testable `drive` loop + live-TTY `run_crossterm`). Run it:
-`cargo run -p positron-ratatui --example counter_tui`.
+Landed since:
+- `positron-ratatui` — terminal renderer + `Host` event loop (O3, outlier A: a
+  genuinely different `type Output` — terminal cells, not a `String`;
+  headless-testable `drive` loop + live-TTY `run_crossterm`). Run it:
+  `cargo run -p positron-ratatui --example counter_tui`.
+- `positron-wgpu` — the GPU renderer (O4, outlier B): a `Renderer` whose
+  `type Output` is a GPU `Frame` (colored quads for a vertex buffer, not any CPU
+  text tree), rasterized offscreen through wgpu to an `RgbaFrame`. That closes
+  the outlier pair — `Renderer<S>` now spans a `String`, terminal cells, and GPU
+  geometry without forcing, so it carries no hidden DOM/text assumption ("web ≠
+  DOM"). The pure `render(state) -> Frame` projection is unit-tested headlessly;
+  the hardware path is proven by `cargo run -p positron-wgpu --example counter_gpu`
+  (missing GPU is a loud `GpuError::NoAdapter`, never a software fallback).
 
-Next (see `docs/ARCHITECTURE.md` § roadmap O4–O6):
-- `positron-wgpu` — one Rust GPU renderer for native (Metal/Vulkan/DX12) + web (WebGPU/WASM) + AR/VR (O4, outlier B — "web ≠ DOM")
+Next (see `docs/ARCHITECTURE.md` § roadmap O4b–O6):
 - `positron-lit` *(optional)* — Lit DOM renderer for a11y / text-reflow (O4b)
 - `ContinuumHost` (in continuum) — session ↔ Commands/Events, first real `ViewState` (O5)
 - persona `Observer` → RAG/tool bridge (O6)

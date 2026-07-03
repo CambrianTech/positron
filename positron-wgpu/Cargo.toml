@@ -1,0 +1,20 @@
+[package]
+name = "positron-wgpu"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "GPU reference renderer for positron (outlier B): a Renderer whose Output is GPU geometry, rasterized offscreen via wgpu to an RgbaFrame. Runs native (Metal/Vulkan/DX12) and web (WebGPU/WASM) from one source."
+
+[dependencies]
+positron-core = { path = "../positron-core" }
+wgpu = { workspace = true }
+pollster = { workspace = true }
+bytemuck = { workspace = true }
+
+[dev-dependencies]
+# The counter_gpu example writes rasterized frames to PNG so the GPU path is
+# eyeball-verifiable; image stays a dev-dependency and never ships in the crate.
+image = "0.25"
