@@ -79,12 +79,47 @@ where
     Ok(())
 }
 
+/// What the live loop should do with one terminal event. Extracting this as a
+/// pure decision keeps the loop's gating — the live-only part `drive` never
+/// sees — testable without a TTY (see [`classify`] and its unit tests).
+#[derive(Debug, PartialEq)]
+enum LoopAction {
+    /// A quit key fired — leave the loop.
+    Quit,
+    /// A key press to dispatch through [`step`].
+    Dispatch(KeyEvent),
+    /// Something changed the surface size — redraw only.
+    Redraw,
+    /// Not our concern (key release, mouse, paste, focus).
+    Ignore,
+}
+
+/// Classify one crossterm [`Event`] into a [`LoopAction`]. Pure — no I/O, no
+/// host — so the Press/quit/resize gating (the live-only surface) is unit-tested
+/// headlessly. Only key **presses** dispatch: Windows also emits `Release`,
+/// which would otherwise double every key.
+fn classify(event: Event, quit_on: &impl Fn(&KeyEvent) -> bool) -> LoopAction {
+    match event {
+        Event::Key(key) if key.kind == KeyEventKind::Press => {
+            if quit_on(&key) {
+                LoopAction::Quit
+            } else {
+                LoopAction::Dispatch(key)
+            }
+        }
+        Event::Resize(_, _) => LoopAction::Redraw,
+        _ => LoopAction::Ignore,
+    }
+}
+
 /// Live TTY driver: enter raw mode + the alternate screen, seed `initial`
 /// state, then block on real crossterm key events until `quit_on` fires.
-/// Always restores the terminal, even on error.
+/// Always restores the terminal, even on error — and if restoring itself fails,
+/// the loop's original (root-cause) error still wins.
 ///
-/// This is the thin, un-unit-tested wrapper around the same [`step`]/[`redraw`]
-/// that [`drive`] exercises headlessly — the only genuinely TTY-bound surface.
+/// The wrapper is thin: the dispatch ([`step`]/[`redraw`]) and the event gating
+/// ([`classify`]) are both unit-tested headlessly; only the blocking
+/// `event::read` I/O here is genuinely TTY-bound.
 pub fn run_crossterm<S, R, C>(
     host: &mut TerminalHost<S, R, C>,
     initial: S,
@@ -105,11 +140,15 @@ where
     let result = run_loop(&mut terminal, host, &mut apply, &quit_on);
 
     // Restore unconditionally — a live loop that leaves the terminal in raw
-    // mode is worse than the error that got us here.
-    disable_raw_mode()?;
-    execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
-    terminal.show_cursor()?;
-    result
+    // mode is worse than the error that got us here. `result.and(restore)`
+    // surfaces the loop's error first: a restore failure must never mask the
+    // root cause ("fail loud and NAME the cause").
+    let restore = (|| -> io::Result<()> {
+        disable_raw_mode()?;
+        execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
+        terminal.show_cursor()
+    })();
+    result.and(restore)
 }
 
 fn run_loop<B, S, R, C>(
@@ -126,17 +165,58 @@ where
 {
     redraw(terminal, host)?;
     loop {
-        match event::read()? {
-            // Only Press — Windows also emits Release, which would double every key.
-            Event::Key(key) if key.kind == KeyEventKind::Press => {
-                if quit_on(&key) {
-                    return Ok(());
-                }
+        match classify(event::read()?, quit_on) {
+            LoopAction::Quit => return Ok(()),
+            LoopAction::Dispatch(key) => {
                 step(host, key, apply);
                 redraw(terminal, host)?;
             }
-            Event::Resize(_, _) => redraw(terminal, host)?,
-            _ => {}
+            LoopAction::Redraw => redraw(terminal, host)?,
+            LoopAction::Ignore => {}
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ratatui::crossterm::event::{KeyCode, KeyModifiers};
+
+    fn press(code: KeyCode) -> Event {
+        Event::Key(KeyEvent::new_with_kind(
+            code,
+            KeyModifiers::NONE,
+            KeyEventKind::Press,
+        ))
+    }
+
+    fn is_quit(key: &KeyEvent) -> bool {
+        key.code == KeyCode::Esc
+    }
+
+    // what this catches: the live-only event gating that `drive` never
+    // exercises — only key PRESSES dispatch (a Release is ignored, so Windows'
+    // duplicate events don't double every key), a quit key leaves the loop, a
+    // resize redraws, and non-key events are ignored.
+    #[test]
+    fn classify_gates_press_quit_resize_and_ignores_the_rest() {
+        match classify(press(KeyCode::Up), &is_quit) {
+            LoopAction::Dispatch(key) => assert_eq!(key.code, KeyCode::Up),
+            other => panic!("expected Dispatch(Up), got {other:?}"),
+        }
+        assert_eq!(classify(press(KeyCode::Esc), &is_quit), LoopAction::Quit);
+
+        let release = Event::Key(KeyEvent::new_with_kind(
+            KeyCode::Up,
+            KeyModifiers::NONE,
+            KeyEventKind::Release,
+        ));
+        assert_eq!(classify(release, &is_quit), LoopAction::Ignore);
+
+        assert_eq!(
+            classify(Event::Resize(80, 24), &is_quit),
+            LoopAction::Redraw
+        );
+        assert_eq!(classify(Event::FocusGained, &is_quit), LoopAction::Ignore);
     }
 }
