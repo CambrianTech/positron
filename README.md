@@ -81,7 +81,10 @@ Next:
 - `examples/counter-cli` — trivial demo proving the contract is renderer-agnostic
 - Theme pack (Loki / Matrix / Fallout / Tron) ported from the cyberpunk-cli experiment
 
-See `DESIGN.md` for the contract design and the rationale behind each trait.
+See `DESIGN.md` for the contract design and the rationale behind each trait, and
+`docs/ARCHITECTURE.md` for the **separation of concerns** — how one app definition
+projects to web, terminal, mobile, and an AI persona, and where positron ends and
+the substrate's `Commands`/`Events` begin.
 
 ---
 
