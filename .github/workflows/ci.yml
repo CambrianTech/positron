@@ -29,3 +29,21 @@ jobs:
         # #[ts(export)] type whose .ts was never committed must fail
         # here, not slip through as untracked.
         run: test -z "$(git status --porcelain)" || { git status --porcelain; exit 1; }
+
+  # The TS side of the contract: @positron/core (and, from O4b-2,
+  # @positron/lit) typecheck and its smoke tests run. The hand-authored
+  # contract interfaces (contract.ts) have no Rust drift gate — this job
+  # is their gate. Lockfile is ignored (matching Cargo.lock), so `npm
+  # install`, not `npm ci`; deps are dev-only (typescript/tsx/@types).
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm install
+      - name: typecheck
+        run: npm run typecheck
+      - name: test
+        run: npm test
