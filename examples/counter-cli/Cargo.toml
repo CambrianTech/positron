@@ -1,0 +1,19 @@
+[package]
+name = "counter-cli"
+description = "The positron 'define once, project many' proof: one ViewState, two renderers, one observer — in-process, zero transport."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+publish = false
+
+[[bin]]
+name = "counter-cli"
+path = "src/main.rs"
+
+[dependencies]
+positron-core = { path = "../../positron-core" }
+uuid = { workspace = true }
+serde_json = { workspace = true }
